@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="Member">
+  	<select id="selectMemberById" resultType="kh.coded.dto.MemberDTO">
+  		select * from member where userId = #{userId}
+  	</select>
+  	<select id="selectMemberByUserNo" resultType="kh.coded.dto.MemberDTO">
+  		select * from member where userNo = ${userNo}
+  	</select>
+  	<select id="isMemberId" resultType="String">
+  		select userId from member where userId=#{userId}
+  	</select>
+  	<select id="isMemberByEmail" resultType="String">
+  		select userId from member where email=#{email}
+  	</select>
+  	<select id="selectMemberByNickName" resultType="kh.coded.dto.MemberDTO">
+  		select * from member where userNickname like '%'||#{userNickName}||'%'
+  	</select>
+  	<select id="selectMemberForPwSend" resultType="kh.coded.dto.MemberDTO">
+  		select * from member where userId=#{userId} And userNickName=#{userNickName} And email=#{email}
+  	</select>
+  	<select id="selectMemberByKakaoToken" resultType="kh.coded.dto.MemberDTO">
+  		select * from Member where KakaoToken=#{kakaoToken}
+  	</select>
+  	<select id="selectMemberByNaverToken" resultType="kh.coded.dto.MemberDTO">
+  		select * from Member where NaverToken=#{naverToken}
+  	</select>
+  	<select id="selectMemberByGoogleToken" resultType="kh.coded.dto.MemberDTO">
+  		select * from Member where GoogleToken=${googleToken}
+  	</select>
+  	<select id="selectKakaoTokenByUserNo" resultType="String">
+  		select KakaoToken from Member where UserNo=${userNo}
+  	</select>
+  	<select id="selectNaverTokenByUserNo" resultType="String">
+  		select NaverToken from Member where UserNo=${userNo}
+  	</select>
+  	<select id="selectGoogleTokenByUserNo" resultType="String">
+  		select GoogleToken from Member where UserNo=${userNo}
+  	</select>
+  	<insert id="insertMember">
+  		<selectKey keyProperty="userNo" resultType="int" order="BEFORE">
+  			select userno_seq.nextval from dual
+  		</selectKey>
+  			insert into member(userNo, userId, pw, userNickname, bio, hashTag, email, address1, address2, role, naverToken, kakaoToken, googleToken)
+  			values(${userNo},#{userId},#{pw},#{userNickName},#{bio},#{hashTag}, #{email},#{address1},#{address2},#{role},#{naverToken},#{kakaoToken},#{googleToken})
+  	</insert>
+	<delete id="deleteMember">
+		delete member where userId = #{userId}
+	</delete>
+	<delete id="deleteMemberAdmin">
+		delete member where userNo=${userNo}
+	</delete>
+	<update id="updateMember">
+		update member set usernickname = #{userNickName}, bio = #{bio}, hashtag = #{hashtag},
+		 address1 = #{address1}, address2 = #{address2} where userId = #{userId}
+	</update>
+	<update id="updateKakaoToken">
+		update Member set KakaoToken=#{kakaoToken, jdbcType=VARCHAR} where userNo=${userNo}
+	</update>
+	<update id="updateNaverToken">
+		update Member set NaverToken=#{naverToken, jdbcType=VARCHAR} where userNo=${userNo}
+	</update>
+	<update id="updateGoogleToken">
+		update Member set GoogleToken=#{googleToken, jdbcType=VARCHAR} where userNo=${userNo}
+	</update>
+	<update id="updatePw">
+		update member set pw = #{pw} where userId = #{userId}
+	</update>
+
+	<select id="selectUserList" resultType="kh.coded.dto.MemberDTO">
+		select * from member order by userNo desc
+	</select>
+
+	<select id="selectUserListWithProfile" resultType="kh.coded.dto.MemberWithProfileDTO">
+		select * from member left join photo using (userNo) order by userNo desc
+	</select>
+
+	<select id="selectUserWithProfileByUserNo" resultType="kh.coded.dto.MemberWithProfileDTO">
+		select * from member left join photo using (userNo) where userNo=${userNo}
+	</select>
+
+	<!--	다른사람이 나를 팔로우-->
+	<select id="followerList" resultType="kh.coded.dto.MemberWithProfileDTO"> <!-- 내가 팔로우 하는 사람들 정보(photo,member정보)-->
+		select m.*, (select count(*) from follow where fromuserno = ${myUserNo} and touserno=m.userno) isFollow
+		from (select * from member
+		left join photo using (userNo)
+		where userno in
+		(select touserno from follow where fromuserno = ${targetUserNo})) m
+	</select>
+
+	<!--	내가 다른사람을 팔로우중-->
+	<select id="followingList" resultType="kh.coded.dto.MemberWithProfileDTO"> <!-- 나를 팔로우 하는 사람들 정보(photo,member정보)-->
+		select m.*, (select count(*) from follow where fromuserno = ${myUserNo} and touserno=m.userno) isFollow
+		from (select * from member
+		left join photo using (userNo)
+		where userno in
+		(select fromuserno from follow where touserNo = ${targetUserNo})) m
+	</select>
+
+	<update id="updateMemberByUserNo">
+		update member set userId=#{userId}, userNickName = #{userNickName}, email = #{email}, bio=#{bio}, hashTag=#{hashTag},
+		address1 = #{address1}, address2 = #{address2} where userNo = ${userNo}
+	</update>
+
+	<select id="selectMyPickPageData" resultType="kh.coded.dto.MyPickPageDTO">
+		SELECT m.*,p.* ,fp.postCount, nvl(follower.followingCount,0) as followerCount, nvl(following.followerCount,0) as followingCount from member m
+		LEFT JOIN photo p ON m.userNo = p.userNo
+		LEFT JOIN ( SELECT userNo, COUNT(*) AS postCount FROM feedPost WHERE userNo = ${userNo} GROUP BY userNo ) fp ON m.userNo = fp.userNo
+		left join ( select toUserNo, count(*) as followingCount from follow where toUserNo = ${userNo} group by toUserNo ) follower on m.userNo = follower.toUserNo
+		left join ( select fromUserNo, count(*) as followerCount from follow where fromUserNo = ${userNo} group by fromUserNo ) following on m.userNo = following.fromUserNo
+		WHERE m.userNo = ${userNo}
+	</select>
+	
+	<select id="getRecordCount" resultType="int">
+		select count(*) from member
+	</select>
+	
+	<select id="selectPaging" resultType="kh.coded.dto.MemberDTO">
+		select m.*
+		from
+		(select mem.*,
+		row_number() over(order by mem.userNo desc) rn
+			from member mem
+		) m
+		where rn between ${startNum} and ${endNum}
+		order by rn asc
+	</select>
+	
+	<select id="getRecordCountById" resultType="int">
+		select count(*) from member
+		where userId Like '%'||#{userId}||'%'
+	</select>
+	
+	<select id="selectPagingById" resultType="kh.coded.dto.MemberDTO">
+		select m.*
+		from
+		(select mem.*,
+		row_number() over(order by mem.userNo desc) rn
+			from member mem
+			where userId Like '%'||#{userId}||'%'
+		) m
+		where rn between ${startNum} and ${endNum}
+		order by rn asc
+	</select>
+	
+	<select id="getRecordCountByNickName" resultType="int">
+		select count(*) from member
+		where userNickName Like '%'||#{userNickName}||'%'
+	</select>
+	
+	<select id="selectPagingByNickName" resultType="kh.coded.dto.MemberDTO">
+		select m.*
+		from
+		(select mem.*,
+		row_number() over(order by mem.userNo desc) rn
+			from member mem
+			where userNickName Like '%'||#{userNickName}||'%'
+		) m
+		where rn between ${startNum} and ${endNum}
+		order by rn asc
+	</select>
+	
+	<select id="getRecordCountByRole" resultType="int">
+		select count(*) from member
+		where Role Like '%'||#{role}||'%'
+	</select>
+	
+	<select id="selectPagingByRole" resultType="kh.coded.dto.MemberDTO">
+		select m.*
+		from
+		(select mem.*,
+		row_number() over(order by mem.userNo desc) rn
+			from member mem
+			where Role Like '%'||#{role}||'%'
+		) m
+		where rn between ${startNum} and ${endNum}
+		order by rn asc
+	</select>
+	
+	<select id="getRecordCountByEmail" resultType="int">
+		select count(*) from member
+		where email Like '%'||#{email}||'%'
+	</select>
+	
+	<select id="selectPagingByEmail" resultType="kh.coded.dto.MemberDTO">
+		select m.*
+		from
+		(select mem.*,
+		row_number() over(order by mem.userNo desc) rn
+			from member mem
+			where email Like '%'||#{email}||'%'
+		) m
+		where rn between ${startNum} and ${endNum}
+		order by rn asc
+	</select>
+
+  </mapper>

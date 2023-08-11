@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Photo">
+
+    <select id="selectByFeedpostId" resultType="kh.coded.dto.PhotoDTO">
+        select * from photo where feedpostid = ${feedPostId}
+    </select>
+    <insert id="insertPhoto">
+        <choose>
+            <when test="userNo!=0">
+                insert into photo values (photoid_seq.nextval, #{oriName}, #{sysName}, 0, 0, ${userNo})
+            </when>
+            <when test="feedPostId!=0">
+                insert into photo values (photoid_seq.nextval, #{oriName}, #{sysName}, ${feedPostId}, 0, 0)
+            </when>
+        </choose>
+    </insert>
+
+    <select id="selectByUserNo" resultType="kh.coded.dto.PhotoDTO">
+        select * from photo where userno = ${userNo}
+    </select>
+
+    <select id="testedBySelectPhoto" resultType="kh.coded.dto.PhotoDTO">
+        select * from (select photo.*, row_number() over(order by photoid desc) rn from photo) where rn between 3 and 7
+    </select>
+
+    <insert id="updatePhoto">
+        <choose>
+            <when test="userNo!=0">
+                update photo set oriName = #{oriName}, sysName = #{sysName} where userNo = ${userNo}
+            </when>
+            <when test="feedPostId!=0">
+                update photo set oriName = #{oriName}, sysName = #{sysName} where feedPostId = ${feedPostId}
+            </when>
+        </choose>
+    </insert>
+
+    <delete id="deletePhote">
+        <choose>
+            <when test="feedPostId!=0">
+                delete from photo where feedPostId = ${feedPostId}
+            </when>
+        </choose>
+    </delete>
+    
+    <select id="selectByMessageId" resultType="kh.coded.dto.PhotoDTO">
+    	select * from photo where messageId=${messageId}
+    </select>
+
+    <insert id="insertChatPhoto">
+        <selectKey keyProperty="messageId" resultType="int" order="BEFORE" >
+            select messageId_seq.nextval from dual
+        </selectKey>
+        insert into photo values (photoid_seq.nextval, #{oriName}, #{sysName}, 0, ${messageId}, 0)
+    </insert>
+
+    <select id="selectAllMessagePhotos" resultType="kh.coded.dto.PhotoDTO">
+        select * from photo where messageId in(select messageId from dm where roomid = ${roomId})
+    </select>
+
+    <select id="deleteAllMessagePhotos" resultType="kh.coded.dto.PhotoDTO">
+        delete from photo where messageId in(select messageId from dm where roomid = ${roomId})
+    </select>
+
+</mapper>
+
+  

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="EUC-KR">
+<title>Insert title here</title>
+</head>
+<body>
+
+
+
+Kakao.API.request({
+  url: '/v1/user/unlink',
+  success: function (response) {
+    console.log(response);
+  },
+  fail: function (error) {
+    console.log(error);
+  }
+}); //카카오톡과 연결끊기(회원 자동 탈퇴는 X)
+
+
+</body>
+</html>

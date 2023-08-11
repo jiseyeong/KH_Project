@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DMRoom">
+	<select id="selectByUserNo" resultType="kh.coded.dto.DMRoomListDTO">
+		<![CDATA[
+		select dm.roomid, m.userno, m.userid, m.usernickname, p.photoid, p.oriname, p.sysname, dm.chk
+      	from member m
+    	join (select user1.*, (select count(*)
+      	from dmroom room where room.roomid = user1.roomid and room.lastmessageid > 
+     	(select user2.lastreadmessageid from dmroomuser user2 where user2.userno = ${userNo} and user1.roomid = user2.roomid)) 
+      	as chk from dmroomuser user1) dm on m.userno=dm.userno
+      	left join photo p on m.userno=p.userno
+      	where m.userno = any(select userno from dmroomuser where roomid = 
+      	any(select roomid from dmroomuser where userno = ${userNo}) 
+      	and userno <> ${userNo}) and dm.roomid = any(select roomid from dmroomuser where userno = ${userNo})
+      	]]>
+	</select>
+	
+	<insert id="createRoomId">
+		<selectKey resultType="int" keyProperty="roomId" order="BEFORE">
+			select roomid_seq.nextval from dual
+		</selectKey>
+		insert into dmroom values (${roomId}, 2)
+	</insert>
+	
+	<select id="selectPagingList" resultType="kh.coded.dto.DMRoomDTO">
+		select r.*
+		from
+			(select room.*,
+				row_number() over(order by room.RoomId desc) rn
+				from DMRoom room
+			) r
+		where rn between ${startNum} and ${endNum}
+		order by rn asc
+	</select>
+	
+	<select id="getRecordCount" resultType="int">
+		select count(*) from DMRoom
+	</select>
+	
+	<select id="selectOneByRoomId" resultType="kh.coded.dto.DMRoomDTO">
+		select * from DMRoom where roomId=${roomId}
+	</select>
+	
+	<delete id="deleteByRoomId">
+		delete from DMRoom where roomId=${roomId}
+	</delete>
+	
+	<update id="updateDMRoomMessageId">
+		update dmroom set lastmessageid =${messageId}  where roomid = ${roomId}
+	</update>
+	
+	<select id="readCheckFromUserNo" resultType="int">
+		select count(*) 
+		from dmroom 
+		where roomid = ${roomId} and lastmessageid > 
+		(select lastreadmessageid from dmroomuser where userno = ${userNo} and roomid =${roomId})
+	</select>
+
+	<delete id="deleteByUserId">
+		delete from DMRoom where roomid In (select RoomId from DMRoomUser where UserNo=${userNo})
+	</delete>
+	
+	<select id="isRoomCheck" resultType="int">
+		select count(*) from dmroom where roomid = ${roomId}
+	</select>
+	
+</mapper>

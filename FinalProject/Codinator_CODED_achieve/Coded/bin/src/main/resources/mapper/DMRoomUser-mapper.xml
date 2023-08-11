@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="DMRoomUser">
+	<delete id="deleteUserDMRoomUser">
+		delete from dmroom where roomid=${roomId}
+	</delete>
+	
+	<insert id="insertLoginUserToRoom">
+		insert into dmroomuser values (listid_seq.nextval, ${loginUserNo}, ${roomId}, 0)
+	</insert>
+	<insert id="insertClickUserToRoom">
+		insert into dmroomuser values (listid_seq.nextval, ${clickuserNo}, ${roomId} ,0)
+	</insert>
+	
+	<select id="selectByRoomId" resultType="kh.coded.dto.DMRoomUserDTO">
+		select * from DMRoomUser where RoomId=${roomId}
+	</select>
+	
+	<select id="selectByUserNo" resultType="kh.coded.dto.DMRoomUserDTO">
+		select * from DMRoomUser where userNo-${userNo}
+	</select>
+	
+	<select id="selectPagingListByUserNo" resultType="kh.coded.dto.DMRoomUserDTO">
+		select r.*
+		from (select ru.*,
+				row_number() over(order by ru.RoomId desc) rn
+			from DMRoomUser ru
+			where ru.userNo=${userNo} 
+			)r
+		where rn between ${startNum} and ${endNum}
+		order by rn asc
+	</select>
+	
+	<select id="getRecordCountByUserNo" resultType="int">
+		select count(*) from DMRoomUser where userNo=${userNo}
+	</select>
+	
+	<select id="selectAlreadyChat" resultType="int">
+		<![CDATA[
+		select count(*)
+		from member m
+		join dmroomuser dm on m.userno=dm.userno
+		left join photo p on m.userno=p.userno
+		where m.userno = any(select userno from dmroomuser where roomid = 
+		any(select roomid from dmroomuser where userno = #{loginUserNo}) 
+		and userno <> ${loginUserNo}) and dm.roomid = any(select roomid from dmroomuser where userno = #{loginUserNo}) and m.userno = #{clickuserNo}
+		]]>
+	</select>
+	
+	<update id="updateDMRead">
+		 update dmroomuser set lastreadmessageid = ${messageId} where roomid = ${roomId} and userno = ${userNo}
+	</update>
+	
+</mapper>
+
+<!--16 20-->

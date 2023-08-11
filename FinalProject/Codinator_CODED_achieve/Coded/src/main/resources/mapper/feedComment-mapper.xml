@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="FeedComment">
+	<insert id="insert">
+		<selectKey keyProperty="feedCommentId" resultType="int" order="BEFORE">
+			select FeedCommentId_SEQ.nextval from dual
+		</selectKey>
+		insert into FeedComment (FeedCommentId, UserNo, FeedPostId, ParentId, Body, WriteDate, Depth)
+		 values (${feedCommentId}, ${userNo}, ${feedPostId}, null, #{body}, sysdate, 0)
+	</insert>
+	<insert id="insertNestedComment">
+		<selectKey keyProperty="feedCommentId" resultType="int" order="BEFORE">
+			select feedCommentId_seq.nextval from dual
+		</selectKey>
+		insert into FeedComment (FeedCommentId, UserNo, FeedPostId, ParentId, Body, WriteDate, Depth)
+		 values (${feedCommentId}, ${userNo}, ${feedPostId}, ${parentId}, #{body}, sysdate, ${depth})
+	</insert>
+	<update id="update">
+		update FeedComment
+		 set Body=#{body}
+		 where FeedCommentId = ${feedCommentId}
+	</update>
+	<delete id="delete">
+		delete from FeedComment where FeedCommentId=${feedCommentId}
+	</delete>
+	<select id="selectByFeedPostDepth0" resultType="kh.coded.dto.FeedCommentAddDTO">
+		select f.*, m.userId, m.userNickName, p.sysName from FeedComment f
+		left join member m on f.UserNo = m.UserNo
+        left join photo p on f.userNo = p.userNo
+		where f.FeedPostId=${feedPostId} and f.ParentId is null
+		order by f.FeedCommentId asc
+	</select>
+	<select id="selectByParentIdAndDepth" resultType="kh.coded.dto.FeedCommentAddDTO">
+		select f.*, m.userId, m.userNickName, p.sysName from FeedComment f
+		left join member m on f.UserNo = m.UserNo
+        left join photo p on f.userNo = p.userNo
+		where f.ParentId=${parentId} and f.depth=${depth}
+		order by f.FeedCommentId asc
+	</select>
+</mapper>
